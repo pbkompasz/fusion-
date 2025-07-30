@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/commands/hello2.ts","./src/commands/cancel/index.ts","./src/commands/foo/bar.ts","./src/commands/hello/index.ts","./src/commands/hello/world.ts","./src/commands/list/index.ts","./src/commands/status/index.ts","./src/commands/swap/index.ts"],"version":"5.8.3"}
