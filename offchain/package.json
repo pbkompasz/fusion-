@@ -1,0 +1,23 @@
+{
+  "name": "offchain",
+  "version": "1.0.0",
+  "description": "This package contains the offchain elements. A database holds the data, the cli can query status and initiate swaps by submitting the intent signature.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cosmjs/encoding": "^0.34.0",
+    "@cosmjs/proto-signing": "^0.34.0",
+    "@cosmjs/stargate": "^0.34.0",
+    "@types/node": "^24.1.0",
+    "dotenv": "^17.2.1",
+    "ethers": "^6.15.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
