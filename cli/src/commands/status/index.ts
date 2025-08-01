@@ -1,27 +1,23 @@
 import {Args, Command, Flags} from '@oclif/core'
 
+// `./bin/run.js status swap_id`
 export default class StatusIndex extends Command {
   static override args = {
-    file: Args.string({description: 'file to read'}),
+    'swap-id': Args.string({description: 'Swap id'}),
   }
-  static override description = 'describe the command here'
-  static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-  ]
-  static override flags = {
-    // flag with no value (-f, --force)
-    force: Flags.boolean({char: 'f'}),
-    // flag with a value (-n, --name=VALUE)
-    name: Flags.string({char: 'n', description: 'name to print'}),
-  }
+  static override description = 'Get swap status'
+  static override examples = ['<%= config.bin %> <%= command.id %>']
+  static override flags = {}
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(StatusIndex)
 
-    const name = flags.name ?? 'world'
-    this.log(`hello ${name} from /home/pb/fusion-/cli/src/commands/status/index.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
-    }
+    const swapId = args['swap-id']
+
+    const offchain = {}
+    
+    // Verify offchain integrity
+
+    // const swap = offchain.getSwap();
   }
 }

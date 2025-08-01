@@ -1,27 +1,24 @@
 import {Args, Command, Flags} from '@oclif/core'
 
 export default class ListIndex extends Command {
-  static override args = {
-    file: Args.string({description: 'file to read'}),
-  }
-  static override description = 'describe the command here'
-  static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-  ]
+  static override description = 'list swaps'
+  static override examples = ['<%= config.bin %> <%= command.id %>']
   static override flags = {
-    // flag with no value (-f, --force)
-    force: Flags.boolean({char: 'f'}),
-    // flag with a value (-n, --name=VALUE)
-    name: Flags.string({char: 'n', description: 'name to print'}),
+    active: Flags.boolean({description: 'list active swaps'}),
   }
+
+  // `./bin/run.js list`
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(ListIndex)
+    const {flags} = await this.parse(ListIndex)
 
-    const name = flags.name ?? 'world'
     this.log(`hello ${name} from /home/pb/fusion-/cli/src/commands/list/index.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
-    }
+    const offchain = {}
+
+    // Verify offchain integrity
+    // offchain.getStatus()
+
+    // TODO
+    // offchain.getSwap(flags.active)
   }
 }
