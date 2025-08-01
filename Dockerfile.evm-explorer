@@ -1,0 +1,74 @@
+# Start from Ubuntu latest
+FROM ubuntu:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ASDF_DIR=/root/.asdf
+ENV PATH="$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH"
+
+# 1. Install Requirements
+RUN apt-get update && \
+    apt-get install -y \
+      inotify-tools \
+      make \
+      g++ \
+      libudev-dev \
+      zip \
+      unzip \
+      build-essential \
+      cmake \
+      git \
+      automake \
+      libtool \
+      libgmp-dev \
+      libgmp10 \
+      autoconf \
+      m4 \
+      libncurses5-dev \
+      libwxgtk3.0-gtk3-dev \
+      libwxgtk-webview3.0-gtk3-dev \
+      libgl1-mesa-dev 
+
+# 2. Install ASDF
+RUN git clone https://github.com/asdf-vm/asdf.git $ASDF_DIR --branch v0.13.1 && \
+    echo ". $ASDF_DIR/asdf.sh" >> /root/.profile
+
+# Set environment variables for ASDF
+SHELL ["/bin/bash", "-c"]
+RUN source /root/.profile && \
+    asdf plugin add erlang && \
+    asdf plugin add elixir && \
+    asdf plugin add nodejs
+
+# Install NodeJS prerequisites for ASDF NodeJS plugin
+RUN bash -c '. $ASDF_DIR/asdf.sh && \
+    bash $ASDF_DIR/plugins/nodejs/bin/import-release-team-keyring && true'
+
+# 3. Install PostgreSQL-14
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update && \
+    apt-get install -y postgresql-14 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Setup PostgreSQL user and database
+USER postgres
+RUN /etc/init.d/postgresql start && \
+    psql --command "CREATE USER dbusername WITH SUPERUSER PASSWORD 'dbuserpassword';" && \
+    createdb -O dbusername blockscout
+USER root
+
+# 5. Install Rustup / Cargo
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# 6. Clone Blockscout repository and install plugins
+RUN git clone https://github.com/blockscout/blockscout blockscout-backend
+WORKDIR /blockscout-backend
+
+RUN bash -c '. $ASDF_DIR/asdf.sh && asdf install'
+
+# Expose ports if needed (customize based on Blockscout requirements)
+EXPOSE 4000
+
+# Set default command or entrypoint as per Blockscout usage
+CMD ["bash"]

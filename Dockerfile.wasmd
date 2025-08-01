@@ -1,0 +1,32 @@
+FROM golang:1.24
+
+# Install necessary tools
+RUN apt-get update && apt-get install -y make git curl jq
+
+RUN apt-get update && apt-get install -y \
+    curl git make build-essential gcc jq unzip wget ca-certificates
+
+# Clone and build wasmd
+RUN git clone https://github.com/CosmWasm/wasmd.git  && \
+    cd wasmd && \
+    git checkout v0.61.2 && \
+    make install
+
+# Create a working directory for wasmd
+WORKDIR /root/.wasmd
+
+# Initialize and configure the chain
+RUN wasmd init demo --chain-id=docs-chain-1 && \
+    wasmd keys add alice --keyring-backend=test && \
+    wasmd keys add bob --keyring-backend=test && \
+    wasmd genesis add-genesis-account alice "1000000000000stake" --keyring-backend=test && \
+    wasmd genesis add-genesis-account bob "1000000000000stake" --keyring-backend=test && \
+    wasmd genesis gentx alice "250000000stake" --chain-id=docs-chain-1 --amount="250000000stake" --keyring-backend=test && \
+    wasmd genesis collect-gentxs && \
+    sed -i 's|^laddr = "tcp://127.0.0.1:26657"|laddr = "tcp://0.0.0.0:26657"|' /root/.wasmd/config/config.toml
+
+# Expose necessary ports
+EXPOSE 26656 26657 1317
+
+# Start the node
+CMD ["wasmd", "start"]
