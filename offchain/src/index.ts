@@ -1,9 +1,11 @@
 import { StargateClient } from "@cosmjs/stargate";
 import dotenv from "dotenv";
-import { setup } from "./db";
+import * as db from "./db";
 import express from "express";
 import { z } from "zod";
 import { SwapRequest, SwapType } from "./types";
+import { validateSignature as validateSignatureEvm } from "./evm";
+import { validateSignature as validateSignatureCosmos } from "./cosmos";
 
 // Docs
 // A single file to
@@ -29,7 +31,6 @@ const scenarioEvmCosmos = "evm-cosmos";
 
 dotenv.config();
 
-setup();
 
 //
 // Chain event listeners
@@ -40,7 +41,7 @@ const cosmosRpcUrl = process.env.COSMOS_RPC_URL;
 const evmChainId = process.env.EVM_CHAIN_ID;
 const evmRpcUrl = process.env.EVM_RPC_URL;
 
-const COSMOS_LOCALNET_RPC = "http://localhost:26657";
+const COSMOS_LOCALNET_RPC = "http://wasmd:26657";
 
 const setupCosmos = async () => {
   const client = await StargateClient.connect(
@@ -57,17 +58,35 @@ const setupCosmos = async () => {
 const listenerCosmos = async (): Promise<void> => {};
 
 (async () => {
+  await db.setup();
   await setupCosmos();
   await listenerCosmos();
 })();
 
 //
+// Relayer business logic
+//
+
+/**
+ * Create a resolver with wallets on both the EVM chain and the Cosmos chain
+ * NOTE This is only for the demo's sake, otherwise these should not be created rather validated and acknowledged
+ * We store their private keys in database
+ */
+const createResolvers = async () => {
+  // Create resolver
+  // Store resolver in db
+};
+
+//
 // Swap business logic
 //
 
-const swap = async (swapRequest: SwapRequest) => {
+const startSwap = async (swapRequest: SwapRequest) => {
   // 1. Announcement phase
-  // Receive signature
+  // Receive signature DONE
+  // Create auction
+  // NOTE This has to happen onchain too
+  await db.createAuction(swapRequest);
   // Send signature to resolver(s) and begin dutch auction
   // One resolver wins
   // 2. Deposit phase
@@ -98,22 +117,32 @@ const getSwap = (swapId: string) => {};
 // Utils
 //
 
-// Construct a swap object (TODO Use it in the cli/frontend)
+// Construct a swap object that tracks status, and has the methods to interact w/
 const createSwapRequest = async (
   type: SwapType,
   cosmosChainId: number,
   evmChainId: number,
+  from: string,
   to: string,
   sourceCoin: string,
   targetCoin: string,
-  amount: number,
+  amount: number
 ): Promise<SwapRequest> => {
   return {} as SwapRequest;
 };
 
-const validateSignature = async (swapReqquest: SwapRequest, signature: string) => {
-  return true;
-}
+const validateSignature = async (
+  type: SwapType,
+  swapReqquest: SwapRequest,
+  signature: string,
+  expectedAddress: string
+) => {
+  if (type === "evm-cosmos") {
+    return validateSignatureEvm(swapReqquest, signature, expectedAddress);
+  } else {
+    return validateSignatureCosmos(swapReqquest, signature, expectedAddress);
+  }
+};
 
 //
 // API
@@ -142,6 +171,7 @@ const CreateSwapSchema = z.object({
   type: z.string(),
   cosmosChainId: z.number(),
   evmChainId: z.number(),
+  from: z.string(),
   to: z.string(),
   sourceCoin: z.string(),
   targetCoin: z.string(),
@@ -159,6 +189,7 @@ app.post("/swap", async (req, res) => {
     type,
     cosmosChainId,
     evmChainId,
+    from,
     to,
     sourceCoin,
     targetCoin,
@@ -167,28 +198,42 @@ app.post("/swap", async (req, res) => {
   } = parseResult.data;
 
   if (!["cosmos-evm", "evm-cosmos"].includes(type)) {
-    console.log("Wrong type!")
+    console.log("Wrong type!");
     return;
   }
-
 
   const request = await createSwapRequest(
     type as SwapType,
     cosmosChainId,
     evmChainId,
+    from,
     to,
     sourceCoin,
     targetCoin,
     amount
   );
   // Log request to database
+  const id = await db.createSwap({
+    type: type as SwapType,
+    status: "created",
+    cosmosChainId,
+    evmChainId,
+    from,
+    to,
+    sourceCoin,
+    targetCoin,
+    amount,
+  });
 
+  // Signature i.e. hashlock NOTE single-fill for now, calls Sdk.HashLock.forSingleFill(secret) in the cli/frontend
   // Validate signature
-  if (await validateSignature(request, signature)) {
+  if (await validateSignature(type as SwapType, request, signature, from)) {
     // Set status to in-progress
+    db.updateSwapStatus(id, "in-progress");
   } else {
     // Log invalid signature
+    db.updateSwapStatus(id, "invalid");
   }
 
-  await swap(request);
+  await startSwap(request);
 });
