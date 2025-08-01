@@ -14,3 +14,5 @@ export const validateSignature = async (
   const recovered = verifyMessage(json, signature);
   return recovered.toLowerCase() === expectedAddress.toLowerCase();
 };
+
+export const createWallet = (secret: string) => {};

@@ -8,3 +8,5 @@ export const validateSignature = async (
   const json = JSON.stringify(swapReqquest);
   return true;
 };
+
+export const createWallet = (secret: string) => {};
