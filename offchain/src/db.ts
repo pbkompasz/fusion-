@@ -3,7 +3,7 @@ import { Swap, SwapRequest, SwapStatus } from "./types";
 
 const client = new Client({
   user: "user",
-  host: "localhost",
+  host: "db",
   database: "mydb",
   password: "password",
   port: 5432,
@@ -21,7 +21,8 @@ async function setup() {
         type TEXT NOT NULL CHECK (type IN ('cosmos-evm', 'evm-cosmos')),
         cosmosChainId NUMERIC NOT NULL,
         evmChainId NUMERIC NOT NULL,
-        to TEXT NOT NULL,
+        sender TEXT NOT NULL,
+        recipient TEXT NOT NULL,
         sourceCoin TEXT NOT NULL,
         targetCoin TEXT NOT NULL,
         amount NUMERIC NOT NULL
@@ -46,7 +47,7 @@ async function setup() {
 
 async function createSwap(swap: Swap) {
   const result = await client.query(
-    "INSERT INTO swaps (status, type, cosmosChainId, evmChainId, from, to, sourceCoin, targetCoin, amount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+    'INSERT INTO swaps (status, type, cosmosChainId, evmChainId, sender, recipient, sourceCoin, targetCoin, amount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
     [
       swap.status,
       swap.type,
